@@ -12,7 +12,7 @@ type UserActions interface {
 	GetUsers(ctx context.Context, params store.UserParamsToFilter) ([]*entity.User, error)
 	DeleteUser(ctx context.Context, id int) error
 	EditUser(ctx context.Context, id int, params store.UserParamsToEdit) error
-	AddUser(ctx context.Context, params store.UserParamsToAdd) error
+	AddUser(ctx context.Context, name interface{}, surname interface{}, patronymic interface{}, sex interface{}, nationality interface{}, age interface{}) error
 }
 
 type UserService struct {
@@ -20,10 +20,10 @@ type UserService struct {
 	userStore UserActions
 }
 
-func (u *UserService) AddUser(ctx context.Context, params store.UserParamsToAdd) error {
+func (u *UserService) AddUser(ctx context.Context, name interface{}, surname interface{}, patronymic interface{}, sex interface{}, nationality interface{}, age interface{}) error {
 	u.log.Info("[AddUser] started work")
 
-	err := u.userStore.AddUser(ctx, params)
+	err := u.userStore.AddUser(ctx, name, surname, patronymic, sex, nationality, age)
 	if err != nil {
 		u.log.Errorf("[AddUser] error while addind user to db: %s", err.Error())
 		return fmt.Errorf("error while adding user to: %s", err.Error())

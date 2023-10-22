@@ -3,17 +3,19 @@ package handler
 import (
 	"effectiveMobileTestTask/internal/service"
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 type Handler struct {
+	log         *logrus.Logger
 	Engine      *gin.Engine
-	UserService service.UserActions
+	userService service.UserActions
 }
 
 func New(userService service.UserActions) *Handler {
 	h := &Handler{
 		Engine:      gin.New(),
-		UserService: userService,
+		userService: userService,
 	}
 
 	users := h.Engine.Group("users")

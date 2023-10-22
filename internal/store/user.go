@@ -16,33 +16,24 @@ const (
 
 // UserParamsToFilter - Параметры для фильтрации пользователя
 type UserParamsToFilter struct {
-	// Id - пользователя
-	Id int
-	// Name - Имя пользователя
-	Name string
-	// Surname - Фамилия пользователя
-	Surname string
-	// Patronymic - Отчество пользователя
-	Patronymic string
-	// Age - Возраст пользователя
-	Age int
-	// Nationality - Национальность пользователя
+	Id          int
+	Age         int
+	Name        string
+	Surname     string
+	Patronymic  string
 	Nationality string
-	// Sex - Пол пользователя
-	Sex string
-	// Limit - Лимит на вывод
-	Limit uint
-	// Page - Страница вывода
-	Page uint
+	Sex         string
+	Limit       uint
+	Page        uint
 }
 
 type UserParamsToAdd struct {
-	Name        sql.NullString
-	Surname     sql.NullString
-	Patronymic  sql.NullString
-	Sex         sql.NullString
-	Nationality sql.NullString
-	Age         sql.NullInt16
+	Name        interface{}
+	Surname     interface{}
+	Patronymic  interface{}
+	Sex         interface{}
+	Nationality interface{}
+	Age         interface{}
 }
 
 type UserParamsToEdit struct {
@@ -68,31 +59,31 @@ func (u *UserStore) GetUsers(ctx context.Context, params UserParamsToFilter) ([]
 		From("users")
 
 	if params.Id != 0 {
-		sqlBuilder.Where("id = ?", params.Id)
+		sqlBuilder = sqlBuilder.Where("id = ?", params.Id)
 	}
 	if len(strings.TrimSpace(params.Name)) != 0 {
-		sqlBuilder.Where("name = ?", params.Name)
+		sqlBuilder = sqlBuilder.Where("name = ?", params.Name)
 	}
 	if len(strings.TrimSpace(params.Surname)) != 0 {
-		sqlBuilder.Where("surname = ?", params.Surname)
+		sqlBuilder = sqlBuilder.Where("surname = ?", params.Surname)
 	}
 	if len(strings.TrimSpace(params.Patronymic)) != 0 {
-		sqlBuilder.Where("patronymic = ?", params.Patronymic)
+		sqlBuilder = sqlBuilder.Where("patronymic = ?", params.Patronymic)
 	}
 	if len(strings.TrimSpace(params.Nationality)) != 0 {
-		sqlBuilder.Where("nationality = ?", params.Nationality)
+		sqlBuilder = sqlBuilder.Where("nationality = ?", params.Nationality)
 	}
 	if len(strings.TrimSpace(params.Sex)) != 0 {
-		sqlBuilder.Where("sex = ?", params.Sex)
+		sqlBuilder = sqlBuilder.Where("sex = ?", params.Sex)
 	}
 	if params.Age != 0 {
-		sqlBuilder.Where("age = ?", params.Age)
+		sqlBuilder = sqlBuilder.Where("age = ?", params.Age)
 	}
 	if params.Limit != 0 {
-		sqlBuilder.Limit(uint64(params.Limit))
+		sqlBuilder = sqlBuilder.Limit(uint64(params.Limit))
 	}
 	if params.Page != 0 && params.Limit != 0 {
-		sqlBuilder.Offset(uint64(params.Page * params.Limit))
+		sqlBuilder = sqlBuilder.Offset(uint64(params.Page * params.Limit))
 	}
 	query, args, err := sqlBuilder.ToSql()
 	if err != nil {
@@ -135,22 +126,22 @@ func (u *UserStore) EditUser(ctx context.Context, id int, params UserParamsToEdi
 		Where("id = ?", id)
 
 	if params.Name.Valid {
-		sqlBuilder.Set("name", params.Name.String)
+		sqlBuilder = sqlBuilder.Set("name", params.Name.String)
 	}
 	if params.Surname.Valid {
-		sqlBuilder.Set("surname", params.Surname.String)
+		sqlBuilder = sqlBuilder.Set("surname", params.Surname.String)
 	}
 	if params.Patronymic.Valid {
-		sqlBuilder.Set("patronymic", params.Patronymic.String)
+		sqlBuilder = sqlBuilder.Set("patronymic", params.Patronymic.String)
 	}
 	if params.Nationality.Valid {
-		sqlBuilder.Set("nationality", params.Nationality.String)
+		sqlBuilder = sqlBuilder.Set("nationality", params.Nationality.String)
 	}
 	if params.Sex.Valid {
-		sqlBuilder.Set("sex", params.Sex.String)
+		sqlBuilder = sqlBuilder.Set("sex", params.Sex.String)
 	}
 	if params.Age.Valid {
-		sqlBuilder.Set("age", params.Age.Int16)
+		sqlBuilder = sqlBuilder.Set("age", params.Age.Int16)
 	}
 
 	query, args, err := sqlBuilder.ToSql()
@@ -165,14 +156,21 @@ func (u *UserStore) EditUser(ctx context.Context, id int, params UserParamsToEdi
 	return nil
 }
 
-func (u *UserStore) AddUser(ctx context.Context, params UserParamsToAdd) error {
+func (u *UserStore) AddUser(ctx context.Context, name interface{}, surname interface{}, patronymic interface{}, sex interface{}, nationality interface{}, age interface{}) error {
 	ctx, cancel := context.WithTimeout(ctx, CtxTimeout)
 	defer cancel()
 
 	sqlBuilder := squirrel.
 		Insert("users").
-		Columns("name, surname, patronymic, nationality, sex, age").
-		Values(params.Name, params.Surname, params.Patronymic, params.Nationality, params.Sex, params.Age)
+		Columns("name, surname, patronymic, nationality, sex, age")
+	//Values(name.(string), surname.(string), patronymic.(string), nationality.(string), sex.(string), age.(int))
+
+	//TODO: доработать
+	if v, ok := name.(string); ok {
+		sqlBuilder = sqlBuilder.Values(v)
+	} else {
+		sqlBuilder = sqlBuilder.Values(sql.NullString{})
+	}
 
 	query, args, err := sqlBuilder.ToSql()
 	if err != nil {
