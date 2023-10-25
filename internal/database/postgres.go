@@ -6,11 +6,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-const (
-	DriverName = "postgres"
-)
-
-type Config struct {
+type PgConfig struct {
 	Database string `mapstructure:"database"`
 	User     string `mapstructure:"username"`
 	Password string `mapstructure:"password"`
@@ -18,10 +14,10 @@ type Config struct {
 	Port     int    `mapstructure:"port"`
 }
 
-func New(config *Config) (*sqlx.DB, error) {
+func NewPostgres(config *PgConfig) (*sqlx.DB, error) {
 	conStr := fmt.Sprintf("%s://%s:%s@%s:%d/%s?sslmode=disable",
-		DriverName, config.User, config.Password, config.Host, config.Port, config.Database)
-	db, err := sqlx.Open(DriverName, conStr)
+		"postgres", config.User, config.Password, config.Host, config.Port, config.Database)
+	db, err := sqlx.Open("postgres", conStr)
 	if err != nil {
 		return nil, err
 	}

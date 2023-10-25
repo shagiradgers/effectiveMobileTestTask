@@ -2,10 +2,6 @@ package handler
 
 import (
 	"effectiveMobileTestTask/internal/store"
-	"effectiveMobileTestTask/pkg/age_api"
-	"effectiveMobileTestTask/pkg/gender_api"
-	"effectiveMobileTestTask/pkg/nationality_api"
-	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"net/http"
@@ -103,11 +99,48 @@ func (h *Handler) GetUser(ctx *gin.Context) {
 }
 
 func (h *Handler) DeleteUser(ctx *gin.Context) {
+	id, ok, err := GetFromQueryInt(ctx, "id")
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"status": "err",
+			"msg":    "invalid id param",
+		})
+		return
+	}
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"status": "err",
+			"msg":    "id param is required",
+		})
+		return
+	}
 
+	if err = h.userService.DeleteUser(ctx, id); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"status": "err",
+			"msg":    "error in server side",
+		})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{
+		"status": "ok",
+		"msg":    "all is ok",
+	})
 }
 
 func (h *Handler) EditUser(ctx *gin.Context) {
+	var requestBody store.UserParamsToEdit
 
+	if err := ctx.BindJSON(requestBody); err != nil {
+		logrus.Debugf("(handler)[Edit user] while bind body error: %v", err.Error())
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"status": "err",
+			"msg":    "invalid body",
+		})
+		return
+	}
+
+	//h.userService.EditUser()
 }
 
 type AddUserBodyRequest struct {
@@ -120,70 +153,25 @@ func (h *Handler) AddUser(ctx *gin.Context) {
 	var requestBody AddUserBodyRequest
 
 	if err := ctx.BindJSON(&requestBody); err != nil {
-		logrus.Debugf("(handler)[Add user] while bind body error: %v", err)
+		logrus.Debugf("(handler)[Add user] while bind body error: %v", err.Error())
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"status": "err",
-			"msg":    " invalid body",
+			"msg":    "invalid body",
 		})
+		return
 	}
 
-	age, err := age_api.GetAge(requestBody.Name)
+	err := h.userService.AddUser(ctx, requestBody.Name, requestBody.Surname, requestBody.Patronymic)
 	if err != nil {
-		if errors.Is(err, &age_api.AgeNotFound{}) {
-			ctx.JSON(http.StatusBadRequest, gin.H{
-				"status": "err",
-				"msg":    "age not found",
-			})
-			return
-		}
-
-		logrus.Debugf("(handler)[Add user] while get age error: %v", err)
+		logrus.Debugf("(handler)[Add user] while bind body error: %v", err.Error())
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"status": "err",
-			"msg":    "server error",
+			"msg":    "error in server side",
 		})
+		return
 	}
-
-	nationality, err := nationality_api.GetNationality(requestBody.Name)
-	if err != nil {
-		if errors.Is(err, &nationality_api.NationalityNotFound{}) {
-			ctx.JSON(http.StatusBadRequest, gin.H{
-				"status": "err",
-				"msg":    "nationality not found",
-			})
-			return
-		}
-
-		logrus.Debugf("(handler)[Add user] while get nationality error: %v", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"status": "err",
-			"msg":    "server error",
-		})
-	}
-
-	gender, err := gender_api.GetGender(requestBody.Name)
-	if err != nil {
-		if errors.Is(err, &gender_api.GenderNotFound{}) {
-			ctx.JSON(http.StatusBadRequest, gin.H{
-				"status": "err",
-				"msg":    "gender not found",
-			})
-			return
-		}
-
-		logrus.Debugf("(handler)[Add user] while get gender error: %v", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"status": "err",
-			"msg":    "server error",
-		})
-	}
-
-	err = h.userService.AddUser(ctx, store.UserParamsToAdd{
-		Name:        requestBody.Name,
-		Surname:     requestBody.Surname,
-		Patronymic:  requestBody.Patronymic,
-		Sex:         gender,
-		Nationality: nationality,
-		Age:         int16(age),
+	ctx.JSON(http.StatusOK, gin.H{
+		"status": "ok",
+		"msg":    "all is ok",
 	})
 }
